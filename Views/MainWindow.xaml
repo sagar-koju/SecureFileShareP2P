@@ -1,0 +1,92 @@
+﻿<Window x:Class="SecureFileShareP2P.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SecureFileShareP2P"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="250"/>
+            <!-- CHANGE: Added MinWidth -->
+            <ColumnDefinition Width="2*" MinWidth="350"/>
+            <!-- CHANGE: Added MinWidth -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Column 0: Actions -->
+        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
+            <!-- Receiver Settings -->
+            <GroupBox Header="Receiver Settings" Margin="0,0,0,10" Padding="10">
+                <!-- CHANGE: Increased Padding -->
+                <StackPanel>
+                    <TextBlock Text="My Listening Port:" Margin="0,0,0,5"/>
+                    <TextBox x:Name="ReceiverPortBox" Text="12345" Margin="0,0,0,5"/>
+                    <Button x:Name="StartReceiverButton" Content="Start Listening" Click="StartReceiver_Click" Margin="0,5,0,0"/>
+                    <Button x:Name="StartBroadcastButton" Content="Broadcast My Presence" Click="StartBroadcast_Click" Margin="0,5,0,0"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Sender Settings -->
+            <GroupBox Header="Send File" Padding="10">
+                <!-- CHANGE: Increased Padding -->
+                <StackPanel>
+                    <Button Content="Select File to Send" Click="SelectFile_Click"/>
+                    <TextBlock x:Name="SelectedFileText" Margin="0,5" Text="No file selected." TextWrapping="Wrap" MinHeight="40"/>
+                    <!-- CHANGE: Increased MinHeight -->
+                    <TextBlock Text="Selected Peer's IP:" Margin="0,10,0,0"/>
+                    <!-- CHANGE: Clarified Text -->
+                    <TextBox x:Name="ReceiverIPBox" Text="Select a peer" IsReadOnly="True" Background="#EEE" Margin="0,0,0,5"/>
+                    <!-- CHANGE: Default text & margin -->
+                    <Button Content="Send File to Selected Peer" Click="SendFile_Click" Margin="0,10,0,0"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+
+        <!-- Column 1: Peer Discovery -->
+        <GroupBox Grid.Row="0" Grid.Column="1" Header="Peer Discovery" Padding="10">
+            <!-- CHANGE: Increased Padding -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0" Content="Scan for Peers on Network" Click="ScanPeers_Click" Margin="0,0,0,10"/>
+                <!-- CHANGE: Increased Margin -->
+                <ListBox x:Name="PeerList" Grid.Row="1" SelectionChanged="PeerList_SelectionChanged" BorderThickness="1" BorderBrush="#CCC">
+                    <!-- CHANGE: Added Border -->
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="5">
+                                <!-- CHANGE: Added Margin -->
+                                <TextBlock Text="{Binding Username}" FontWeight="Bold" FontSize="14"/>
+                                <TextBlock>
+                                <Run Text="IP:" Foreground="DarkSlateGray"/>
+                                <Run Text="{Binding IP}" Foreground="DarkSlateGray"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </GroupBox>
+
+        <!-- Bottom Row 1: Progress -->
+        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" x:Name="TransferProgress" Height="15" Margin="0,10,0,5"/>
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" x:Name="StatusText" Text="Ready." TextAlignment="Center" FontWeight="Bold"/>
+
+        <!-- Add this for Tasks 1 and 5 -->
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ResetUIButton" Content="Reset" Click="ResetUI_Click" Margin="0,0,10,0" Padding="10,2"/>
+            <Button x:Name="QuitButton" Content="Quit Application" Click="QuitButton_Click" Padding="10,2"/>
+        </StackPanel>
+    </Grid>
+
+
+</Window>
