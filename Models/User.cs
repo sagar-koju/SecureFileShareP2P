@@ -1,9 +1,13 @@
-﻿namespace SecureFileShareP2P.Models  // Match your project's namespace
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SecureFileShareP2P.Models  // Match your project's namespace
 {
     public class User
     {
         public int Id { get; set; }
+
         public string Username { get; set; }
+
         public string PasswordHash { get; set; }
         public string Salt { get; set; }
     }

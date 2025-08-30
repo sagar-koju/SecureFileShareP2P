@@ -62,6 +62,20 @@ namespace SecureFileShareP2P.Views
         {
             if (AuthService.Register(UsernameTextBox.Text, PasswordBox.Password))
             {
+                if (string.IsNullOrEmpty(UsernameTextBox.Text))
+                {
+                    MessageBox.Show("Username is required.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    UsernameTextBox.Focus();
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(PasswordBox.Password))
+                {
+                    MessageBox.Show("Password is required.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    PasswordBox.Focus();
+                    return;
+                }
+
                 MessageBox.Show("Registration successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
@@ -70,11 +84,16 @@ namespace SecureFileShareP2P.Views
             }
         }
 
+        private void UsernameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+
         //yo tala ko function chae rsa test garna ko lagi matrai ho
         //private void TestRSAButton_Click(object sender, RoutedEventArgs e)
         //{
         //    new RSATestWindow().Show(); // Open the dedicated test window
         //}
-      
+
     }
 }
