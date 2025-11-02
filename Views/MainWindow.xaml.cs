@@ -36,7 +36,7 @@ namespace SecureFileShareP2P
             InitializeApplication();
         }
 
-        // Default constructor for testing (if needed)
+        // Default constructor for testing 
         public MainWindow()
         {
             InitializeComponent();
@@ -80,9 +80,6 @@ namespace SecureFileShareP2P
             }
         }
 
-        // FILE: Views/MainWindow.xaml.cs
-
-        // ... (keep the rest of the file the same)
 
         private void StartReceiver_Click(object sender, RoutedEventArgs e)
         {
@@ -125,11 +122,9 @@ namespace SecureFileShareP2P
                     try
                     {
                         SaveFileDialog saveDialog = new SaveFileDialog();
-                        // Pre-populate the name, which includes the extension
                         saveDialog.FileName = fileName;
 
-                        // === NEW CODE TO PRESERVE THE EXTENSION ===
-                        string extension = Path.GetExtension(fileName); // e.g., ".txt", ".jpg"
+                        string extension = Path.GetExtension(fileName);
                         if (!string.IsNullOrEmpty(extension))
                         {
                             // Create a user-friendly file type description, e.g., "TXT file (*.txt)"
@@ -144,7 +139,6 @@ namespace SecureFileShareP2P
                             // Fallback for files that have no extension
                             saveDialog.Filter = "All files|*.*";
                         }
-                        // === END OF NEW CODE ===
 
                         if (saveDialog.ShowDialog() == true)
                         {
@@ -178,7 +172,6 @@ namespace SecureFileShareP2P
             _listenerTask = Task.Run(() => FileTransferManager.ReceiveFileAsync(port, onFileRequest, onFileReceived, onError));
         }
 
-        // ... (The rest of your methods like SendFile_Click, ScanPeers_Click, etc. remain unchanged)
         private async void SendFile_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedFilePath))
@@ -195,6 +188,7 @@ namespace SecureFileShareP2P
 
             TransferProgress.Value = 0;
             StatusText.Text = "Connecting and waiting for receiver to accept...";
+            SendFileButton.IsEnabled = false;
 
             try
             {
@@ -229,6 +223,10 @@ namespace SecureFileShareP2P
                 StatusText.Text = $"Error: {ex.Message}";
                 MessageBox.Show($"Error sending file: {ex.Message}", "Send Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 TransferProgress.Value = 0;
+            }
+            finally
+            {
+                SendFileButton.IsEnabled = true;
             }
         }
 

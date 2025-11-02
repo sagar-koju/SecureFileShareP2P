@@ -113,7 +113,7 @@ namespace SecureFileShareP2P.Network
 
                                 byte[] encryptedFile;
 
-                                // === MODIFIED: Replaced CopyToAsync with a precise byte read loop to prevent deadlock ===
+                               
                                 using (var ms = new MemoryStream())
                                 {
                                     byte[] buffer = new byte[ChunkSize];
@@ -132,7 +132,6 @@ namespace SecureFileShareP2P.Network
                                     }
                                     encryptedFile = ms.ToArray();
                                 }
-                                // === END OF MODIFIED BLOCK ===
 
                                 bool decryptionSuccess = onFileReceived?.Invoke(fileName, encryptedFile, encryptedAesKey, iv) ?? false;
 
