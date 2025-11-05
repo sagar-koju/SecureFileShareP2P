@@ -1,0 +1,41 @@
+﻿<!-- FILE: Views/ChatWindow.xaml -->
+
+<Window x:Class="SecureFileShareP2P.Views.ChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SecureFileShareP2P.Views"
+        mc:Ignorable="d"
+        Title="Chat" Height="450" Width="400"
+        Closing="Window_Closing">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Message Display -->
+        <!-- The x:Name attribute MUST exist here -->
+        <ListBox x:Name="MessagesListBox" Grid.Row="0" Margin="0,0,0,10" 
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                 HorizontalContentAlignment="Stretch">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="2">
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Message Input -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <!-- The x:Name attribute MUST exist here -->
+            <TextBox x:Name="MessageTextBox" Height="30" VerticalContentAlignment="Center"
+                     Width="290" KeyDown="MessageTextBox_KeyDown" />
+            <Button x:Name="SendButton" Content="Send" Height="30" Width="80" 
+                    Margin="10,0,0,0" Click="SendButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

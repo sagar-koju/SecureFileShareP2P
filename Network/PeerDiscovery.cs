@@ -1,5 +1,8 @@
-﻿using System;
+﻿// FILE: Network/PeerDiscovery.cs
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Numerics;
@@ -15,24 +18,19 @@ namespace SecureFileShareP2P.Network
         private static readonly TimeSpan DiscoveryTimeout = TimeSpan.FromSeconds(5);
 
         public static async Task BroadcastPresenceAsync(string myUsername, int myPort,
-            BigInteger rsaModulus, BigInteger rsaPublicKey, CancellationToken ct) // <-- Add key parameters
+            BigInteger rsaModulus, BigInteger rsaPublicKey, CancellationToken ct)
         {
             using (var udpClient = new UdpClient())
             {
                 udpClient.EnableBroadcast = true;
-
-                // Convert keys to Base64 strings
                 string modulusBase64 = Convert.ToBase64String(rsaModulus.ToByteArray());
                 string exponentBase64 = Convert.ToBase64String(rsaPublicKey.ToByteArray());
-
-                // Construct the new message format
                 string messageString = $"DISCOVER:{myUsername}:{myPort}:{modulusBase64}:{exponentBase64}";
                 byte[] message = Encoding.UTF8.GetBytes(messageString);
 
                 while (!ct.IsCancellationRequested)
                 {
-                    await udpClient.SendAsync(message, message.Length,
-                        new IPEndPoint(IPAddress.Broadcast, DiscoveryPort));
+                    await udpClient.SendAsync(message, message.Length, new IPEndPoint(IPAddress.Broadcast, DiscoveryPort));
                     await Task.Delay(2000, ct);
                 }
             }
@@ -40,7 +38,7 @@ namespace SecureFileShareP2P.Network
         public static async Task<List<DiscoveredPeer>> DiscoverPeersAsync(CancellationToken ct)
         {
             var peers = new List<DiscoveredPeer>();
-            var discoveredEndpoints = new HashSet<string>(); // To avoid duplicates
+            var discoveredEndpoints = new HashSet<string>();
 
             using (var udpClient = new UdpClient(DiscoveryPort))
             {
@@ -51,7 +49,7 @@ namespace SecureFileShareP2P.Network
                 {
                     if (udpClient.Available == 0)
                     {
-                        await Task.Delay(100, ct); // Avoid busy-waiting
+                        await Task.Delay(100, ct);
                         continue;
                     }
 
@@ -61,17 +59,15 @@ namespace SecureFileShareP2P.Network
                     if (message.StartsWith("DISCOVER:"))
                     {
                         var parts = message.Split(':');
-                        // New format has 5 parts: DISCOVER, User, Port, Modulus, Exponent
                         if (parts.Length >= 5 && int.TryParse(parts[2], out int peerPort))
                         {
                             string peerIp = result.RemoteEndPoint.Address.ToString();
                             string endpointIdentifier = $"{peerIp}:{peerPort}";
 
-                            if (discoveredEndpoints.Contains(endpointIdentifier)) continue; // Skip duplicate
+                            if (discoveredEndpoints.Contains(endpointIdentifier)) continue;
 
                             try
                             {
-                                // Decode keys from Base64
                                 var modulus = new BigInteger(Convert.FromBase64String(parts[3]));
                                 var exponent = new BigInteger(Convert.FromBase64String(parts[4]));
 
@@ -93,7 +89,7 @@ namespace SecureFileShareP2P.Network
                     }
                 }
             }
-            return peers.DistinctBy(p => p.IP + ":" + p.Port).ToList(); // Final duplicate check
+            return peers.DistinctBy(p => p.IP + ":" + p.Port).ToList();
         }
     }
 
@@ -104,5 +100,10 @@ namespace SecureFileShareP2P.Network
         public int Port { get; set; }
         public BigInteger RsaModulus { get; set; }
         public BigInteger RsaPublicKey { get; set; }
+
+        // === MODIFIED/NEW CODE START ===
+        public DateTime LastSeen { get; set; }
+        public string EndpointIdentifier => $"{IP}:{Port}";
+        // === MODIFIED/NEW CODE END ===
     }
 }

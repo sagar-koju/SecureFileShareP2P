@@ -1,187 +1,135 @@
-﻿using System;
+﻿// FILE: Network/FileTransferManager.cs
+
+using SecureFileShareP2P.Models;
+using SecureFileShareP2P.Services;
+using System;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using SecureFileShareP2P.Services;
 
 namespace SecureFileShareP2P.Network
 {
-    public static class FileTransferManager
+    public class FileTransferManager
     {
-        private const int ChunkSize = 8192; // 8 KB chunk for streaming
+        private const int ChunkSize = 8192; // 8 KB
 
-        public static async Task SendFileAsync(
-            string filePath,
-            string receiverIP,
-            int port,
-            BigInteger rsaPublicKey,
-            BigInteger rsaModulus,
-            Action<long, long> progress)
+        // SENDER'S METHOD
+        public async Task SendFileAsync(
+            string filePath, string receiverIP, int port,
+            BigInteger rsaPublicKey, BigInteger rsaModulus,
+            IProgress<TransferProgressReport> progress, CancellationToken ct)
         {
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException("File not found.", filePath);
-            }
+            using var client = new TcpClient();
+            await client.ConnectAsync(receiverIP, port, ct);
+            using var stream = client.GetStream();
 
-            if (new FileInfo(filePath).Length == 0)
-            {
-                throw new Exception("Cannot send an empty file.");
-            }
+            var (encryptedFile, encryptedAesKey, iv) = FileCryptoService.EncryptFileWithHybrid(filePath, rsaPublicKey, rsaModulus);
 
-            using (TcpClient client = new TcpClient())
+            progress.Report(new TransferProgressReport { Message = "Requesting transfer..." });
+            string request = $"REQUEST:{Path.GetFileName(filePath)}:{encryptedFile.Length}";
+            await WriteChunkAsync(stream, Encoding.UTF8.GetBytes(request), ct);
+
+            string response = Encoding.UTF8.GetString(await ReadChunkAsync(stream, ct));
+            if (response != "ACCEPT") throw new InvalidOperationException("File transfer was rejected by the receiver.");
+
+            await WriteChunkAsync(stream, encryptedAesKey, ct);
+            await WriteChunkAsync(stream, iv, ct);
+
+            using var memoryStream = new MemoryStream(encryptedFile);
+            byte[] buffer = new byte[ChunkSize];
+            int bytesRead;
+            long totalBytesSent = 0;
+
+            while ((bytesRead = await memoryStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
             {
-                await client.ConnectAsync(receiverIP, port);
-                using (NetworkStream stream = client.GetStream())
+                await stream.WriteAsync(buffer, 0, bytesRead, ct);
+                totalBytesSent += bytesRead;
+                progress.Report(new TransferProgressReport
                 {
-                    var (encryptedFile, encryptedAesKey, iv) =
-                        FileCryptoService.EncryptFileWithHybrid(filePath, rsaPublicKey, rsaModulus);
-
-                    string request = $"REQUEST:{Path.GetFileName(filePath)}:{encryptedFile.Length}";
-                    await WriteChunkAsync(stream, Encoding.UTF8.GetBytes(request));
-
-                    string response = Encoding.UTF8.GetString(await ReadChunkAsync(stream));
-                    if (response != "ACCEPT")
-                    {
-                        throw new Exception("File transfer was rejected by the receiver.");
-                    }
-
-                    await WriteChunkAsync(stream, encryptedAesKey);
-                    await WriteChunkAsync(stream, iv);
-
-                    using (var memoryStream = new MemoryStream(encryptedFile))
-                    {
-                        byte[] buffer = new byte[ChunkSize];
-                        int bytesRead;
-                        long totalBytesSent = 0;
-                        while ((bytesRead = await memoryStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await stream.WriteAsync(buffer, 0, bytesRead);
-                            totalBytesSent += bytesRead;
-                            progress?.Invoke(totalBytesSent, encryptedFile.Length);
-                        }
-                    }
-
-                    string finalAck = Encoding.UTF8.GetString(await ReadChunkAsync(stream));
-                    if (finalAck != "ACK_SUCCESS")
-                    {
-                        throw new Exception("Receiver failed to decrypt the file. Transfer incomplete.");
-                    }
-                }
+                    BytesTransferred = totalBytesSent,
+                    TotalBytes = encryptedFile.Length,
+                    Message = "Sending..."
+                });
             }
+
+            progress.Report(new TransferProgressReport { Message = "Waiting for final confirmation..." });
+            string finalAck = Encoding.UTF8.GetString(await ReadChunkAsync(stream, ct));
+            if (finalAck != "ACK_SUCCESS") throw new Exception("Receiver failed to decrypt the file.");
         }
 
-        public static async Task ReceiveFileAsync(int port, Func<string, long, bool> onFileRequest, Func<string, byte[], byte[], byte[], bool> onFileReceived, Action<string> onError)
+        // RECEIVER'S METHOD
+        public async Task ReceiveFileAsync(
+            NetworkStream stream, long encryptedFileSize, string savePath,
+            BigInteger rsaPrivateKey, BigInteger rsaModulus,
+            IProgress<TransferProgressReport> progress, CancellationToken ct)
         {
-            TcpListener listener = null;
+            await WriteChunkAsync(stream, Encoding.UTF8.GetBytes("ACCEPT"), ct);
+
+            byte[] encryptedAesKey = await ReadChunkAsync(stream, ct);
+            byte[] iv = await ReadChunkAsync(stream, ct);
+
+            using var ms = new MemoryStream();
+            byte[] buffer = new byte[ChunkSize];
+            long totalBytesRead = 0;
+            progress.Report(new TransferProgressReport { Message = "Receiving file..." });
+
+            while (totalBytesRead < encryptedFileSize)
+            {
+                ct.ThrowIfCancellationRequested();
+                int bytesToRead = (int)Math.Min(buffer.Length, encryptedFileSize - totalBytesRead);
+                int bytesRead = await stream.ReadAsync(buffer, 0, bytesToRead, ct);
+                if (bytesRead == 0) throw new EndOfStreamException("Connection was closed prematurely.");
+
+                ms.Write(buffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                progress.Report(new TransferProgressReport
+                {
+                    BytesTransferred = totalBytesRead,
+                    TotalBytes = encryptedFileSize,
+                    Message = "Receiving..."
+                });
+            }
+            byte[] encryptedFile = ms.ToArray();
+
+            progress.Report(new TransferProgressReport { Message = "Decrypting and saving file..." });
+            bool success = false;
             try
             {
-                listener = new TcpListener(IPAddress.Any, port);
-                listener.Start();
-
-                while (true)
-                {
-                    using (TcpClient client = await listener.AcceptTcpClientAsync())
-                    using (NetworkStream stream = client.GetStream())
-                    {
-                        try
-                        {
-                            byte[] requestBytes = await ReadChunkAsync(stream);
-                            string request = Encoding.UTF8.GetString(requestBytes);
-                            var parts = request.Split(':');
-
-                            if (parts.Length == 3 && parts[0] == "REQUEST")
-                            {
-                                string fileName = parts[1];
-                                long encryptedFileSize = long.Parse(parts[2]);
-
-                                bool accepted = onFileRequest?.Invoke(fileName, encryptedFileSize) ?? false;
-                                if (accepted)
-                                {
-                                    await WriteChunkAsync(stream, Encoding.UTF8.GetBytes("ACCEPT"));
-                                }
-                                else
-                                {
-                                    await WriteChunkAsync(stream, Encoding.UTF8.GetBytes("REJECT"));
-                                    continue;
-                                }
-
-                                byte[] encryptedAesKey = await ReadChunkAsync(stream);
-                                byte[] iv = await ReadChunkAsync(stream);
-
-                                byte[] encryptedFile;
-
-                               
-                                using (var ms = new MemoryStream())
-                                {
-                                    byte[] buffer = new byte[ChunkSize];
-                                    long totalBytesRead = 0;
-                                    while (totalBytesRead < encryptedFileSize)
-                                    {
-                                        int bytesToRead = (int)Math.Min(buffer.Length, encryptedFileSize - totalBytesRead);
-                                        int bytesRead = await stream.ReadAsync(buffer, 0, bytesToRead);
-                                        if (bytesRead == 0)
-                                        {
-                                            // Connection closed prematurely
-                                            throw new EndOfStreamException("Connection was closed before all file data could be received.");
-                                        }
-                                        ms.Write(buffer, 0, bytesRead);
-                                        totalBytesRead += bytesRead;
-                                    }
-                                    encryptedFile = ms.ToArray();
-                                }
-
-                                bool decryptionSuccess = onFileReceived?.Invoke(fileName, encryptedFile, encryptedAesKey, iv) ?? false;
-
-                                if (decryptionSuccess)
-                                {
-                                    await WriteChunkAsync(stream, Encoding.UTF8.GetBytes("ACK_SUCCESS"));
-                                }
-                                else
-                                {
-                                    await WriteChunkAsync(stream, Encoding.UTF8.GetBytes("ACK_FAIL"));
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            onError?.Invoke($"Client connection error: {ex.Message}");
-                        }
-                    }
-                }
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
-            {
-                onError?.Invoke($"Error: Port {port} is already in use.");
+                // Decrypt and save in one step
+                FileCryptoService.DecryptFileWithHybrid(encryptedFile, encryptedAesKey, iv, rsaPrivateKey, rsaModulus, savePath);
+                success = true;
             }
             catch (Exception ex)
             {
-                onError?.Invoke($"Receiver listener error: {ex.Message}");
+                // Propagate the specific error
+                throw new Exception("File decryption or saving failed.", ex);
             }
             finally
             {
-                listener?.Stop();
+                // Always send acknowledgment, regardless of success
+                await WriteChunkAsync(stream, Encoding.UTF8.GetBytes(success ? "ACK_SUCCESS" : "ACK_FAIL"), CancellationToken.None);
             }
         }
 
-        private static async Task WriteChunkAsync(NetworkStream stream, byte[] data)
+        private async Task WriteChunkAsync(NetworkStream stream, byte[] data, CancellationToken ct)
         {
             byte[] lengthPrefix = BitConverter.GetBytes(data.Length);
-            await stream.WriteAsync(lengthPrefix, 0, lengthPrefix.Length);
-            await stream.WriteAsync(data, 0, data.Length);
+            await stream.WriteAsync(lengthPrefix, 0, lengthPrefix.Length, ct);
+            await stream.WriteAsync(data, 0, data.Length, ct);
         }
 
-        private static async Task<byte[]> ReadChunkAsync(NetworkStream stream)
+        private async Task<byte[]> ReadChunkAsync(NetworkStream stream, CancellationToken ct)
         {
             byte[] lengthBuffer = new byte[4];
-            await stream.ReadExactlyAsync(lengthBuffer, 0, 4);
+            await stream.ReadExactlyAsync(lengthBuffer, 0, 4, ct);
             int length = BitConverter.ToInt32(lengthBuffer, 0);
             byte[] dataBuffer = new byte[length];
             if (length > 0)
             {
-                await stream.ReadExactlyAsync(dataBuffer, 0, length);
+                await stream.ReadExactlyAsync(dataBuffer, 0, length, ct);
             }
             return dataBuffer;
         }
