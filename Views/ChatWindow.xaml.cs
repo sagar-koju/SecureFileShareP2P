@@ -1,6 +1,7 @@
 ﻿// FILE: Views/ChatWindow.xaml.cs
 
 using SecureFileShareP2P.Cryptography;
+using SecureFileShareP2P.Models; // Import the Models namespace
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -16,12 +17,12 @@ namespace SecureFileShareP2P.Views
     {
         private readonly NetworkStream _stream;
         private readonly byte[] _sessionAesKey;
-        private readonly string _localUser;
         private readonly string _remoteUser;
         private readonly TcpClient _client;
         private bool _isExiting = false;
 
-        public ObservableCollection<string> Messages { get; } = new ObservableCollection<string>();
+        // === MODIFIED: Use ChatMessage instead of string ===
+        public ObservableCollection<ChatMessage> Messages { get; } = new ObservableCollection<ChatMessage>();
 
         public ChatWindow(TcpClient client, byte[] sessionAesKey, string localUser, string remoteUser)
         {
@@ -29,7 +30,6 @@ namespace SecureFileShareP2P.Views
             _client = client;
             _stream = client.GetStream();
             _sessionAesKey = sessionAesKey;
-            _localUser = localUser;
             _remoteUser = remoteUser;
 
             this.Title = $"Chat with {_remoteUser}";
@@ -55,20 +55,34 @@ namespace SecureFileShareP2P.Views
         {
             if (string.IsNullOrWhiteSpace(MessageTextBox.Text)) return;
 
-            string message = MessageTextBox.Text;
+            string messageText = MessageTextBox.Text;
             try
             {
-                var (ciphertext, iv) = AESCrypto.Encrypt(Encoding.UTF8.GetBytes(message), _sessionAesKey);
-
+                // Encrypt and send the raw text
+                var (ciphertext, iv) = AESCrypto.Encrypt(Encoding.UTF8.GetBytes(messageText), _sessionAesKey);
                 await WriteChunkAsync(_stream, iv);
                 await WriteChunkAsync(_stream, ciphertext);
 
-                AddMessageToUI($"{_localUser} (You): {message}");
+                // === MODIFIED: Add a ChatMessage object to the UI ===
+                var message = new ChatMessage
+                {
+                    Content = messageText,
+                    Sender = MessageSender.LocalUser,
+                    Timestamp = DateTime.Now
+                };
+                AddMessageToUI(message);
+
                 MessageTextBox.Clear();
             }
             catch (Exception ex)
             {
-                AddMessageToUI($"[Error sending message: {ex.Message}]");
+                var errorMessage = new ChatMessage
+                {
+                    Content = $"[Error sending message: {ex.Message}]",
+                    Sender = MessageSender.System,
+                    Timestamp = DateTime.Now
+                };
+                AddMessageToUI(errorMessage);
             }
         }
 
@@ -82,26 +96,53 @@ namespace SecureFileShareP2P.Views
                     byte[] ciphertext = await ReadChunkAsync(_stream);
 
                     byte[] decryptedBytes = AESCrypto.Decrypt(ciphertext, _sessionAesKey, iv);
-                    string message = Encoding.UTF8.GetString(decryptedBytes);
+                    string messageText = Encoding.UTF8.GetString(decryptedBytes);
 
-                    AddMessageToUI($"{_remoteUser}: {message}");
+                    // === MODIFIED: Create a ChatMessage for the received message ===
+                    var message = new ChatMessage
+                    {
+                        Content = messageText,
+                        Sender = MessageSender.RemoteUser,
+                        Timestamp = DateTime.Now
+                    };
+                    AddMessageToUI(message);
                 }
             }
             catch (IOException)
             {
-                if (!_isExiting) AddMessageToUI($"[{_remoteUser} has disconnected.]");
+                if (!_isExiting)
+                {
+                    var disconnectMessage = new ChatMessage
+                    {
+                        Content = $"[{_remoteUser} has disconnected.]",
+                        Sender = MessageSender.System,
+                        Timestamp = DateTime.Now
+                    };
+                    AddMessageToUI(disconnectMessage);
+                }
             }
             catch (Exception)
             {
-                if (!_isExiting) AddMessageToUI($"[Connection lost.]");
+                if (!_isExiting)
+                {
+                    var connectionLostMessage = new ChatMessage
+                    {
+                        Content = "[Connection lost.]",
+                        Sender = MessageSender.System,
+                        Timestamp = DateTime.Now
+                    };
+                    AddMessageToUI(connectionLostMessage);
+                }
             }
         }
 
-        private void AddMessageToUI(string message)
+        // === MODIFIED: The parameter is now a ChatMessage ===
+        private void AddMessageToUI(ChatMessage message)
         {
             Dispatcher.Invoke(() => Messages.Add(message));
         }
 
+        // Helper methods (unchanged)
         private static async Task WriteChunkAsync(NetworkStream stream, byte[] data)
         {
             byte[] lengthPrefix = BitConverter.GetBytes(data.Length);

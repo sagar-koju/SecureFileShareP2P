@@ -21,7 +21,7 @@
             <ColumnDefinition Width="2*" MinWidth="350"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Column 0: Actions -->
+        <!-- Column 0: Actions (No changes here) -->
         <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
             <!-- Receiver Settings -->
             <GroupBox Header="Receiver Settings" Margin="0,0,0,10" Padding="10">
@@ -64,7 +64,7 @@
             </GroupBox>
         </StackPanel>
 
-        <!-- Column 1: Peer Discovery -->
+        <!-- Column 1: Peer Discovery (No changes here) -->
         <GroupBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Header="Peer Discovery" Padding="10">
             <Grid>
                 <Grid.RowDefinitions>
@@ -103,7 +103,7 @@
             </Grid>
         </GroupBox>
 
-        <!-- Bottom Rows: Progress & Status -->
+        <!-- Bottom Rows: Progress & Status (No changes here) -->
         <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" x:Name="TransferProgress" Height="15" Margin="0,10,0,5"/>
         <TextBlock Grid.Row="3" Grid.ColumnSpan="2" x:Name="StatusText" Text="Ready." TextAlignment="Center" FontWeight="Bold"/>
 
@@ -112,8 +112,10 @@
                     Visibility="Collapsed" Background="IndianRed" Foreground="White"/>
         </StackPanel>
 
+        <!-- === MODIFIED STACKPANEL WITH LOGOUT BUTTON === -->
         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="ResetUIButton" Content="Reset" Click="ResetUI_Click" Margin="0,0,10,0" Padding="10,2"/>
+            <Button x:Name="LogoutButton" Content="Logout" Click="LogoutButton_Click" Margin="0,0,10,0" Padding="10,2" Background="CornflowerBlue" Foreground="White"/>
             <Button x:Name="QuitButton" Content="Quit Application" Click="QuitButton_Click" Padding="10,2"/>
         </StackPanel>
     </Grid>

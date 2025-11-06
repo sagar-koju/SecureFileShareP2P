@@ -25,15 +25,15 @@ namespace SecureFileShareP2P
 {
     public partial class MainWindow : Window
     {
-        // Fields for application state
-        private string _selectedFilePath;
+        // === NULLABILITY FIX: Fields that can be null are marked with '?' ===
+        private string? _selectedFilePath;
         private BigInteger _rsaPublicKey, _rsaModulus, _rsaPrivateKey;
-        private DiscoveredPeer _selectedPeer;
+        private DiscoveredPeer? _selectedPeer;
 
         // Threading, Timers, and Cancellation
-        private CancellationTokenSource _broadcastCts;
-        private CancellationTokenSource _discoveryCts;
-        private CancellationTokenSource _transferCts;
+        private CancellationTokenSource? _broadcastCts;
+        private CancellationTokenSource? _discoveryCts;
+        private CancellationTokenSource? _transferCts;
         private readonly DispatcherTimer _peerCleanupTimer;
         private const int PeerTimeoutSeconds = 10;
 
@@ -83,6 +83,7 @@ namespace SecureFileShareP2P
 
         #region UI Event Handlers (Buttons, Selection, etc.)
 
+        // ... All the UI Event Handler methods are unchanged ...
         private void SelectFile_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog();
@@ -179,6 +180,7 @@ namespace SecureFileShareP2P
 
         #region Request Handling (Accept/Reject)
 
+        // ... Request handling methods are unchanged ...
         private void AcceptRequest_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.CommandParameter is IncomingRequest request)
@@ -220,6 +222,7 @@ namespace SecureFileShareP2P
 
         #region Communication and Transfer Logic
 
+        // ... Communication and transfer methods are unchanged ...
         private async void StartChat_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.CommandParameter is DiscoveredPeer peer)
@@ -343,13 +346,13 @@ namespace SecureFileShareP2P
 
         #region CommunicationManager Event Handlers
 
-        private void OnChatRequestReceived(object sender, ChatRequestEventArgs e)
+        private void OnChatRequestReceived(object? sender, ChatRequestEventArgs e)
         {
             var request = new IncomingRequest { Type = RequestType.Chat, Message = $"Chat from {e.RemoteUser}", EventArgs = e };
             Dispatcher.Invoke(() => _incomingRequests.Add(request));
         }
 
-        private void OnFileRequestReceived(object sender, FileRequestEventArgs e)
+        private void OnFileRequestReceived(object? sender, FileRequestEventArgs e)
         {
             string fileSizeKB = (e.FileSize / 1024.0).ToString("F2");
             var request = new IncomingRequest { Type = RequestType.File, Message = $"File '{e.FileName}' ({fileSizeKB} KB)", EventArgs = e };
@@ -359,6 +362,8 @@ namespace SecureFileShareP2P
         #endregion
 
         #region Helper Methods & Cleanup
+
+        // ... Most helper methods are unchanged ...
 
         private void CancelTransfer_Click(object sender, RoutedEventArgs e) => _transferCts?.Cancel();
 
@@ -390,7 +395,7 @@ namespace SecureFileShareP2P
             }
         }
 
-        private void PeerCleanupTimer_Tick(object sender, EventArgs e)
+        private void PeerCleanupTimer_Tick(object? sender, EventArgs e)
         {
             var peersToRemove = _discoveredPeers.Values
                 .Where(p => (DateTime.UtcNow - p.LastSeen).TotalSeconds > PeerTimeoutSeconds)
@@ -416,18 +421,43 @@ namespace SecureFileShareP2P
             return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
 
+        // === MODIFIED METHOD ===
         protected override void OnClosed(EventArgs e)
         {
+            // This event fires when the window is closed for any reason.
+            // Its only job is to clean up this window's resources.
             _broadcastCts?.Cancel();
             _discoveryCts?.Cancel();
             _peerCleanupTimer.Stop();
             base.OnClosed(e);
+            // DO NOT SHUT DOWN THE APPLICATION HERE
+        }
+
+        // === MODIFIED METHOD ===
+        private void QuitButton_Click(object sender, RoutedEventArgs e)
+        {
+            // This is now the ONLY place where we shut down the application.
             Application.Current.Shutdown();
         }
 
-        private void QuitButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+        // The LogoutButton_Click method is now correct and requires no changes.
+        // It will close this window, trigger the cleanup in OnClosed, but the app will stay alive.
+        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop all background activities
+            _broadcastCts?.Cancel();
+            _discoveryCts?.Cancel();
+            _peerCleanupTimer.Stop();
 
-        private void ResetUI_Click(object sender, RoutedEventArgs e)
+            // Create and show a new LoginWindow
+            var loginWindow = new LoginWindow();
+            loginWindow.Show();
+
+            // Close the current MainWindow
+            this.Close();
+        }
+
+        private void ResetUI_Click(object? sender, RoutedEventArgs? e)
         {
             _broadcastCts?.Cancel();
             _broadcastCts = new CancellationTokenSource();

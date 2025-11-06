@@ -1,14 +1,23 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
-namespace SecureFileShareP2P.Models  // Match your project's namespace
+namespace SecureFileShareP2P.Models
 {
     public class User
     {
         public int Id { get; set; }
 
+        [Required]
         public string Username { get; set; }
 
+        [Required]
         public string PasswordHash { get; set; }
+
+        [Required]
         public string Salt { get; set; }
+
+        // === NEW PROPERTIES FOR USER PROFILE ===
+        public string FullName { get; set; }
+        public string Email { get; set; }
     }
 }

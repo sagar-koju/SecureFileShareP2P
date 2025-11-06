@@ -6,6 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SecureFileShareP2P.Views"
+        xmlns:models="clr-namespace:SecureFileShareP2P.Models"
         mc:Ignorable="d"
         Title="Chat" Height="450" Width="400"
         Closing="Window_Closing">
@@ -16,14 +17,59 @@
         </Grid.RowDefinitions>
 
         <!-- Message Display -->
-        <!-- The x:Name attribute MUST exist here -->
         <ListBox x:Name="MessagesListBox" Grid.Row="0" Margin="0,0,0,10" 
+                 ScrollViewer.CanContentScroll="False"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
-                 HorizontalContentAlignment="Stretch">
+                 HorizontalContentAlignment="Stretch"
+                 BorderThickness="0">
+
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+
             <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="2">
-                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                <DataTemplate DataType="{x:Type models:ChatMessage}">
+                    <Grid Margin="0,5">
+                        <!-- This Border is the message bubble -->
+                        <Border MaxWidth="250" Padding="8,6" CornerRadius="10"
+                                BorderThickness="1" BorderBrush="#E0E0E0">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <!-- Default Style (for RemoteUser) -->
+                                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                                    <Setter Property="Background" Value="#F0F0F0"/>
+
+                                    <Style.Triggers>
+                                        <!-- Trigger for LocalUser (Sent Messages) -->
+                                        <DataTrigger Binding="{Binding Sender}" Value="LocalUser">
+                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                            <Setter Property="Background" Value="#D9FDD3"/>
+                                        </DataTrigger>
+
+                                        <!-- Trigger for System Messages -->
+                                        <DataTrigger Binding="{Binding Sender}" Value="System">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="#E6F0F3"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <StackPanel>
+                                <TextBlock Text="{Binding Content}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Timestamp, StringFormat='hh:mm tt'}" 
+                                           FontSize="9" Foreground="Gray" 
+                                           HorizontalAlignment="Right" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
@@ -31,7 +77,6 @@
 
         <!-- Message Input -->
         <StackPanel Grid.Row="1" Orientation="Horizontal">
-            <!-- The x:Name attribute MUST exist here -->
             <TextBox x:Name="MessageTextBox" Height="30" VerticalContentAlignment="Center"
                      Width="290" KeyDown="MessageTextBox_KeyDown" />
             <Button x:Name="SendButton" Content="Send" Height="30" Width="80" 
