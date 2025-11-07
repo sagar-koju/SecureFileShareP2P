@@ -18,7 +18,7 @@ namespace SecureFileShareP2P.Network
 
         // SENDER'S METHOD
         public async Task SendFileAsync(
-            string filePath, string receiverIP, int port,
+            string filePath, string senderUsername, string receiverIP, int port, string receiverUsername,
             BigInteger rsaPublicKey, BigInteger rsaModulus,
             IProgress<TransferProgressReport> progress, CancellationToken ct)
         {
@@ -29,11 +29,17 @@ namespace SecureFileShareP2P.Network
             var (encryptedFile, encryptedAesKey, iv) = FileCryptoService.EncryptFileWithHybrid(filePath, rsaPublicKey, rsaModulus);
 
             progress.Report(new TransferProgressReport { Message = "Requesting transfer..." });
-            string request = $"REQUEST:{Path.GetFileName(filePath)}:{encryptedFile.Length}";
+            string request = $"REQUEST:{senderUsername}:{Path.GetFileName(filePath)}:{encryptedFile.Length}";
             await WriteChunkAsync(stream, Encoding.UTF8.GetBytes(request), ct);
 
             string response = Encoding.UTF8.GetString(await ReadChunkAsync(stream, ct));
-            if (response != "ACCEPT") throw new InvalidOperationException("File transfer was rejected by the receiver.");
+            if (response != "ACCEPT")
+            {
+                // The owner of a "Rejected" log from the sender's side is the sender.
+                await LogService.LogFileTransferAsync(Path.GetFileName(filePath), new FileInfo(filePath).Length, senderUsername, receiverUsername, "Rejected", senderUsername);
+                throw new InvalidOperationException("File transfer was rejected by the receiver.");
+            }
+
 
             await WriteChunkAsync(stream, encryptedAesKey, ct);
             await WriteChunkAsync(stream, iv, ct);
@@ -57,12 +63,21 @@ namespace SecureFileShareP2P.Network
 
             progress.Report(new TransferProgressReport { Message = "Waiting for final confirmation..." });
             string finalAck = Encoding.UTF8.GetString(await ReadChunkAsync(stream, ct));
-            if (finalAck != "ACK_SUCCESS") throw new Exception("Receiver failed to decrypt the file.");
+            if (finalAck != "ACK_SUCCESS")
+            {
+                // The owner of a "Failed" log is the sender.
+                await LogService.LogFileTransferAsync(Path.GetFileName(filePath), new FileInfo(filePath).Length, senderUsername, receiverUsername, "Failed (Decryption)", senderUsername);
+                throw new Exception("Receiver failed to decrypt the file.");
+            }
+
+            // The owner of a "Sent" log is the sender.
+            await LogService.LogFileTransferAsync(Path.GetFileName(filePath), new FileInfo(filePath).Length, senderUsername, receiverUsername, "Sent", senderUsername);
         }
 
         // RECEIVER'S METHOD
         public async Task ReceiveFileAsync(
-            NetworkStream stream, long encryptedFileSize, string savePath,
+            string fileName, NetworkStream stream, long encryptedFileSize, string savePath,
+            string senderUsername, string receiverUsername,
             BigInteger rsaPrivateKey, BigInteger rsaModulus,
             IProgress<TransferProgressReport> progress, CancellationToken ct)
         {
@@ -101,10 +116,13 @@ namespace SecureFileShareP2P.Network
                 // Decrypt and save in one step
                 FileCryptoService.DecryptFileWithHybrid(encryptedFile, encryptedAesKey, iv, rsaPrivateKey, rsaModulus, savePath);
                 success = true;
+                // The owner of a "Received" log is the receiver.
+                await LogService.LogFileTransferAsync(fileName, new FileInfo(savePath).Length, senderUsername, receiverUsername, "Received", receiverUsername);
             }
             catch (Exception ex)
             {
-                // Propagate the specific error
+                // The owner of a "Failed" log on the receiver's side is the receiver.
+                await LogService.LogFileTransferAsync(fileName, 0, senderUsername, receiverUsername, "Failed (Receive)", receiverUsername);
                 throw new Exception("File decryption or saving failed.", ex);
             }
             finally

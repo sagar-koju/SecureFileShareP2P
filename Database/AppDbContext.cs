@@ -1,11 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SecureFileShareP2P.Models;  // Reference Models namespace
+﻿// FILE: Database/AppDbContext.cs
 
-namespace SecureFileShareP2P.Database  // Match your folder
+using Microsoft.EntityFrameworkCore;
+using SecureFileShareP2P.Models;
+
+namespace SecureFileShareP2P.Database
 {
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
+        public DbSet<FileLog> FileLogs { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {

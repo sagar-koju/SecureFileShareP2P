@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace SecureFileShareP2P.Network
 {
-    // Define arguments for our events
     public class ChatRequestEventArgs : EventArgs
     {
         public TcpClient Client { get; }
@@ -31,12 +30,14 @@ namespace SecureFileShareP2P.Network
         public NetworkStream Stream { get; }
         public string FileName { get; }
         public long FileSize { get; }
-        public FileRequestEventArgs(TcpClient client, NetworkStream stream, string fileName, long fileSize)
+        public string RemoteUser { get; }
+        public FileRequestEventArgs(TcpClient client, NetworkStream stream, string fileName, long fileSize, string remoteUser)
         {
             Client = client;
             Stream = stream;
             FileName = fileName;
             FileSize = fileSize;
+            RemoteUser = remoteUser;
         }
     }
 
@@ -48,7 +49,6 @@ namespace SecureFileShareP2P.Network
         private TcpListener _listener;
         private Task _listenerTask;
 
-        // Events that the UI will subscribe to
         public event EventHandler<ChatRequestEventArgs> ChatRequestReceived;
         public event EventHandler<FileRequestEventArgs> FileRequestReceived;
         public event EventHandler<string> ListenerStatusChanged;
@@ -78,7 +78,6 @@ namespace SecureFileShareP2P.Network
                     while (true)
                     {
                         TcpClient client = await _listener.AcceptTcpClientAsync();
-                        // Handle each client in a new task to not block the listener
                         _ = Task.Run(() => HandleIncomingConnection(client));
                     }
                 }
@@ -95,18 +94,17 @@ namespace SecureFileShareP2P.Network
             {
                 NetworkStream stream = client.GetStream();
 
-                // Read the first chunk, which should be the command
                 byte[] commandBytes = await ReadChunkAsync(stream);
                 string commandFull = Encoding.UTF8.GetString(commandBytes);
                 var parts = commandFull.Split(':');
                 string commandType = parts[0];
 
-                if (commandType == "REQUEST") // File Transfer
+                if (commandType == "REQUEST" && parts.Length >= 4) // File Transfer (e.g., "REQUEST:SENDER_USER:file.zip:12345")
                 {
-                    string fileName = parts[1];
-                    long fileSize = long.Parse(parts[2]);
-                    // Raise the event for the UI to handle
-                    FileRequestReceived?.Invoke(this, new FileRequestEventArgs(client, stream, fileName, fileSize));
+                    string remoteUser = parts[1];
+                    string fileName = parts[2];
+                    long fileSize = long.Parse(parts[3]);
+                    FileRequestReceived?.Invoke(this, new FileRequestEventArgs(client, stream, fileName, fileSize, remoteUser));
                 }
                 else if (commandType == "CHAT_INIT") // Chat Request
                 {
@@ -115,7 +113,6 @@ namespace SecureFileShareP2P.Network
                 }
                 else
                 {
-                    // If the command is unknown, just close the connection.
                     client.Close();
                 }
             }
@@ -128,17 +125,14 @@ namespace SecureFileShareP2P.Network
 
         private async Task HandleIncomingChat(TcpClient client, NetworkStream stream, string remoteUser)
         {
-            // 1. Receive and decrypt the session AES key
             byte[] encryptedAesKey = await ReadChunkAsync(stream);
             string encryptedAesKeyBase64 = Convert.ToBase64String(encryptedAesKey);
             string aesKeyBase64 = RSACrypto.Decrypt(encryptedAesKeyBase64, _rsaModulus, _rsaPrivateKey);
             byte[] sessionAesKey = Convert.FromBase64String(aesKeyBase64);
 
-            // 2. Raise the event for the UI to handle (ask user to accept)
             ChatRequestReceived?.Invoke(this, new ChatRequestEventArgs(client, remoteUser, sessionAesKey));
         }
 
-        // Helper methods (can be static as they don't depend on instance state)
         private static async Task<byte[]> ReadChunkAsync(NetworkStream stream)
         {
             byte[] lengthBuffer = new byte[4];

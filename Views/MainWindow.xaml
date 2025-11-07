@@ -21,7 +21,7 @@
             <ColumnDefinition Width="2*" MinWidth="350"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Column 0: Actions (No changes here) -->
+        <!-- Column 0: Actions -->
         <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
             <!-- Receiver Settings -->
             <GroupBox Header="Receiver Settings" Margin="0,0,0,10" Padding="10">
@@ -47,31 +47,44 @@
             <GroupBox Header="Incoming Requests" Margin="0,10,0,0" Padding="10" Grid.Row="1">
                 <ListBox x:Name="RequestsList" MinHeight="100" MaxHeight="200" ItemsSource="{Binding IncomingRequests}">
                     <ListBox.ItemTemplate>
+                        <!-- === THIS IS THE MODIFIED SECTION === -->
                         <DataTemplate>
-                            <Grid Margin="2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Grid.Column="0" />
-                                <Button Content="Accept" Click="AcceptRequest_Click" CommandParameter="{Binding}" Grid.Column="1" Margin="5,0"/>
-                                <Button Content="Reject" Click="RejectRequest_Click" CommandParameter="{Binding}" Grid.Column="2"/>
+                            <Grid Margin="2, 4">
+                                <!-- Grid now has two rows defined -->
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <!-- For the message text -->
+                                    <RowDefinition Height="Auto" />
+                                    <!-- For the buttons -->
+                                </Grid.RowDefinitions>
+
+                                <!-- Message TextBlock is in the first row -->
+                                <TextBlock Grid.Row="0" Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,0,8" />
+
+                                <!-- A StackPanel holds the buttons in the second row, aligned to the right -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="Accept" Click="AcceptRequest_Click" CommandParameter="{Binding}" Margin="0,0,5,0" Padding="15,2"/>
+                                    <Button Content="Reject" Click="RejectRequest_Click" CommandParameter="{Binding}" Padding="15,2"/>
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
+                        <!-- === END OF MODIFIED SECTION === -->
                     </ListBox.ItemTemplate>
                 </ListBox>
             </GroupBox>
         </StackPanel>
 
-        <!-- Column 1: Peer Discovery (No changes here) -->
+        <!-- Column 1: Peer Discovery -->
         <GroupBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Header="Peer Discovery" Padding="10">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+
                 <Button Grid.Row="0" Content="Start/Restart Peer Scan" Click="ScanPeers_Click" Margin="0,0,0,10"/>
+
                 <ListBox x:Name="PeerList" Grid.Row="1" SelectionChanged="PeerList_SelectionChanged" BorderThickness="1" BorderBrush="#CCC">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
@@ -100,10 +113,15 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                    <Button x:Name="ViewHistoryButton" Content="View History" Click="ViewHistoryButton_Click" Margin="0,0,10,0" Padding="10,2"/>
+                    <Button x:Name="LogoutButton" Content="Logout" Click="LogoutButton_Click" Padding="10,2" Background="CornflowerBlue" Foreground="White"/>
+                </StackPanel>
             </Grid>
         </GroupBox>
 
-        <!-- Bottom Rows: Progress & Status (No changes here) -->
+        <!-- Bottom Rows: Progress & Status -->
         <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" x:Name="TransferProgress" Height="15" Margin="0,10,0,5"/>
         <TextBlock Grid.Row="3" Grid.ColumnSpan="2" x:Name="StatusText" Text="Ready." TextAlignment="Center" FontWeight="Bold"/>
 
@@ -112,10 +130,8 @@
                     Visibility="Collapsed" Background="IndianRed" Foreground="White"/>
         </StackPanel>
 
-        <!-- === MODIFIED STACKPANEL WITH LOGOUT BUTTON === -->
         <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="ResetUIButton" Content="Reset" Click="ResetUI_Click" Margin="0,0,10,0" Padding="10,2"/>
-            <Button x:Name="LogoutButton" Content="Logout" Click="LogoutButton_Click" Margin="0,0,10,0" Padding="10,2" Background="CornflowerBlue" Foreground="White"/>
             <Button x:Name="QuitButton" Content="Quit Application" Click="QuitButton_Click" Padding="10,2"/>
         </StackPanel>
     </Grid>
