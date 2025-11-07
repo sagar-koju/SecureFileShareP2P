@@ -69,7 +69,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Button Grid.Row="0" Content="Start/Restart Peer Scan" Click="ScanPeers_Click" Margin="0,0,0,10"/>
+                <Button Grid.Row="0" Content="Scan Peers" Click="ScanPeers_Click" Margin="0,0,0,10"/>
 
                 <ListBox x:Name="PeerList" Grid.Row="1" SelectionChanged="PeerList_SelectionChanged" BorderThickness="1" BorderBrush="#CCC">
                     <ListBox.ItemTemplate>
