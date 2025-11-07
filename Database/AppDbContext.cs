@@ -1,6 +1,4 @@
-﻿// FILE: Database/AppDbContext.cs
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SecureFileShareP2P.Models;
 
 namespace SecureFileShareP2P.Database

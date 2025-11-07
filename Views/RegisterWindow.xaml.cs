@@ -18,7 +18,7 @@ namespace SecureFileShareP2P.Views
             string password = PasswordBox.Password;
             string passwordConfirm = ConfirmPasswordBox.Password;
 
-            // --- 1. Basic Field Validation ---
+            // 1. Basic Field Validation 
             if (string.IsNullOrWhiteSpace(FullNameTextBox.Text) ||
                 string.IsNullOrWhiteSpace(email) ||
                 string.IsNullOrWhiteSpace(UsernameTextBox.Text) ||
@@ -28,28 +28,28 @@ namespace SecureFileShareP2P.Views
                 return;
             }
 
-            // --- 2. Email Format Validation ---
+            // 2. Email Format Validation 
             if (!IsValidEmail(email))
             {
                 MessageBox.Show("Please enter a valid email address.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // --- 3. Password Strength Validation ---
+            // 3. Password Strength Validation 
             if (!IsValidPassword(password, out string passwordError))
             {
                 MessageBox.Show(passwordError, "Weak Password", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // --- 4. Password Match Validation ---
+            // 4. Password Match Validation 
             if (password != passwordConfirm)
             {
                 MessageBox.Show("Passwords do not match.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // --- If all validation passes, proceed with registration ---
+            // If all validation passes, proceed with registration 
             bool success = AuthService.Register(
                 UsernameTextBox.Text,
                 password,
@@ -72,8 +72,6 @@ namespace SecureFileShareP2P.Views
         {
             this.Close();
         }
-
-        // === VALIDATION HELPER METHODS ===
 
         /// <summary>
         /// Validates an email address using a regular expression.

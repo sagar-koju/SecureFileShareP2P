@@ -28,7 +28,6 @@ namespace SecureFileShareP2P.Views
             }
         }
 
-        // === MODIFIED REGISTER BUTTON CLICK HANDLER ===
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
             // Opens the new, dedicated registration window
@@ -38,7 +37,7 @@ namespace SecureFileShareP2P.Views
 
         private void UsernameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            // No changes needed here
+            
         }
     }
 }

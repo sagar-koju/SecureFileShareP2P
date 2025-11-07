@@ -1,6 +1,4 @@
-﻿// FILE: Views/FileLogWindow.xaml.cs
-
-using SecureFileShareP2P.Database;
+﻿using SecureFileShareP2P.Database;
 using SecureFileShareP2P.Models;
 using System;
 using System.Collections.ObjectModel;
@@ -30,7 +28,6 @@ namespace SecureFileShareP2P.Views
             {
                 using (var db = new AppDbContext())
                 {
-                    // === THE CORRECTED QUERY ===
                     // This now fetches logs where the OwnerUsername is the person currently viewing the history.
                     var logs = db.FileLogs
                         .Where(log => log.OwnerUsername == _currentUser)

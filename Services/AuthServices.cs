@@ -28,7 +28,6 @@ namespace SecureFileShareP2P.Services
             return SHA256Hasher.ComputeHash(saltedPassword);
         }
 
-        // === MODIFIED REGISTER METHOD ===
         public static bool Register(string username, string password, string fullName, string email)
         {
             using (var db = new AppDbContext())

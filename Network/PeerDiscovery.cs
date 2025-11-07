@@ -1,6 +1,4 @@
-﻿// FILE: Network/PeerDiscovery.cs
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -100,10 +98,7 @@ namespace SecureFileShareP2P.Network
         public int Port { get; set; }
         public BigInteger RsaModulus { get; set; }
         public BigInteger RsaPublicKey { get; set; }
-
-        // === MODIFIED/NEW CODE START ===
         public DateTime LastSeen { get; set; }
         public string EndpointIdentifier => $"{IP}:{Port}";
-        // === MODIFIED/NEW CODE END ===
     }
 }

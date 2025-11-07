@@ -10,15 +10,13 @@
         WindowStartupLocation="CenterScreen">
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="250">
-            <!-- Username Field -->
+
             <TextBlock Text="Username" Margin="0 0 0 5"/>
             <TextBox x:Name="UsernameTextBox" Height="25" Margin="0 0 0 10" TextChanged="UsernameTextBox_TextChanged"/>
 
-            <!-- Password Field -->
             <TextBlock Text="Password" Margin="0 0 0 5"/>
             <PasswordBox x:Name="PasswordBox" Height="25" Margin="0 0 0 20"/>
 
-            <!-- Buttons -->
             <Button x:Name="LoginButton" Content="Login" Height="30" Click="LoginButton_Click"/>
             <Button x:Name="RegisterButton" Content="Register" Height="30" Margin="0 10 0 0" 
                     Click="RegisterButton_Click"/>

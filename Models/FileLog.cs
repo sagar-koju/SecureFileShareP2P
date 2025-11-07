@@ -1,6 +1,4 @@
-﻿// FILE: Models/FileLog.cs
-
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SecureFileShareP2P.Models
@@ -24,7 +22,6 @@ namespace SecureFileShareP2P.Models
         [Required]
         public string Status { get; set; }
 
-        // === NEW PROPERTY ===
         [Required]
         public string OwnerUsername { get; set; }
 

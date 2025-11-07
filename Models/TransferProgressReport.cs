@@ -1,6 +1,4 @@
-﻿// FILE: Models/TransferProgressReport.cs
-
-namespace SecureFileShareP2P.Models
+﻿namespace SecureFileShareP2P.Models
 {
     public class TransferProgressReport
     {

@@ -15,8 +15,6 @@ namespace SecureFileShareP2P.Models
 
         [Required]
         public string Salt { get; set; }
-
-        // === NEW PROPERTIES FOR USER PROFILE ===
         public string FullName { get; set; }
         public string Email { get; set; }
     }

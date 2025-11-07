@@ -9,7 +9,6 @@ namespace SecureFileShareP2P.Services
 {
     public static class LogService
     {
-        // === MODIFIED METHOD SIGNATURE ===
         public static Task LogFileTransferAsync(string fileName, long fileSize, string sender, string receiver, string status, string ownerUsername)
         {
             return Task.Run(() =>
@@ -25,7 +24,6 @@ namespace SecureFileShareP2P.Services
                             SenderUsername = sender,
                             ReceiverUsername = receiver,
                             Status = status,
-                            // === SET THE NEW PROPERTY ===
                             OwnerUsername = ownerUsername,
                             Timestamp = DateTime.UtcNow
                         };

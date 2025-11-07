@@ -1,6 +1,4 @@
-﻿// FILE: Models/ChatMessage.cs
-
-using System;
+﻿using System;
 
 namespace SecureFileShareP2P.Models
 {

@@ -1,6 +1,4 @@
-﻿// FILE: Views/ChatWindow.xaml.cs
-
-using SecureFileShareP2P.Cryptography;
+﻿using SecureFileShareP2P.Cryptography;
 using SecureFileShareP2P.Models;
 using System;
 using System.Collections.ObjectModel;

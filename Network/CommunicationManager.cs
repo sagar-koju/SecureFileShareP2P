@@ -1,6 +1,4 @@
-﻿// FILE: Network/CommunicationManager.cs
-
-using SecureFileShareP2P.Cryptography;
+﻿using SecureFileShareP2P.Cryptography;
 using System;
 using System.IO;
 using System.Net;

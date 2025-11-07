@@ -1,6 +1,4 @@
-﻿// FILE: Models/MessageLog.cs
-
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SecureFileShareP2P.Models

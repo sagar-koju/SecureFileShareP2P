@@ -1,6 +1,4 @@
-﻿// FILE: Network/FileTransferManager.cs
-
-using SecureFileShareP2P.Models;
+﻿using SecureFileShareP2P.Models;
 using SecureFileShareP2P.Services;
 using System;
 using System.IO;
