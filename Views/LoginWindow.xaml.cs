@@ -13,6 +13,19 @@ namespace SecureFileShareP2P.Views
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(UsernameTextBox.Text))
+            {
+                MessageBox.Show("Username is required.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                UsernameTextBox.Focus();
+                return; 
+            }
+
+            if (string.IsNullOrEmpty(PasswordBox.Password))
+            {
+                MessageBox.Show("Password is required.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                PasswordBox.Focus();
+                return;
+            }
             string username = UsernameTextBox.Text;
             if (AuthService.Login(username, PasswordBox.Password))
             {
@@ -30,9 +43,8 @@ namespace SecureFileShareP2P.Views
 
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            // Opens the new, dedicated registration window
             var registerWindow = new RegisterWindow();
-            registerWindow.ShowDialog(); // ShowDialog makes it modal
+            registerWindow.ShowDialog(); 
         }
 
         private void UsernameTextBox_TextChanged(object sender, TextChangedEventArgs e)
